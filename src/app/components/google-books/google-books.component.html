@@ -1,0 +1,70 @@
+
+<mat-card class="header">
+    <form [formGroup]="googleBooks" class="search-form">
+        <div class="search-form-container">
+            <mat-form-field class="search-form-field" appearance="fill"
+                [floatLabel]="false">
+                <input matInput 
+                    formControlName="search" 
+                    placeholder="Search Google Books" 
+                    (keydown)="onKeyDown($event)" 
+                    autofocus 
+                    required>
+                <mat-icon matSuffix 
+                    (click)="searchBooks()" 
+                    class="pointer" 
+                    matTooltip="Search">
+                    search
+                </mat-icon>
+            </mat-form-field>
+            <mat-checkbox color="primary" formControlName="favorite" class="search-favorite">
+                Favorites
+            </mat-checkbox>
+        </div>
+    </form>
+</mat-card>
+<div class="container">
+    <app-infinite-scroll (scrolled)="getPage()" class="scroll-class">
+        <mat-card *ngFor="let book of items" materialElevation [defaultElevation]="3" [raisedElevation]="5" class="book">
+                <mat-card-title class="pointer" [matTooltip]="book.title" class="book-title">
+                    {{book.title}}
+                </mat-card-title>
+                <mat-card-subtitle class="pointer" 
+                    [hidden]="!book.authors" 
+                    [matTooltip]="book.authors" 
+                    class="book-title subtitle">
+                    {{book.authors}}
+                </mat-card-subtitle>
+            <img mat-card-image [src]="book.image">
+            <div class="book-buttons-container">
+                <button mat-button (click)="addFavorite(book)">
+                    <mat-icon color="primary" [matTooltip]="book.favorite ? 'Remove from Favorites' : 'Add to Favorites'">
+                        {{book.favorite ? 'favorite' : 'favorite_border'}}
+                    </mat-icon>
+                </button>
+                <button mat-button 
+                    color="primary" 
+                    [style.display]="!!book.pdf ? 'inline-block':'none'"
+                    (click)="download(book)" 
+                    matTooltip="Download PDF">
+                    PDF
+                </button>
+                <button mat-button 
+                    color="primary" 
+                    [style.display]="!!book.preview ? 'inline-block':'none'"
+                    (click)="preview(book)" 
+                    matTooltip="Open preview">
+                    Preview
+                </button>
+            </div>
+        </mat-card>
+    </app-infinite-scroll>
+</div>
+<div class="spinner-container" [hidden]="!loadingPage">
+    <mat-spinner diameter="70" class="spinner">
+    </mat-spinner>
+</div>
+
+<div class="no-results-container" [hidden]="hasResult()">
+    No results found
+</div>

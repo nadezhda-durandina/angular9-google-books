@@ -12,9 +12,10 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatIconModule } from '@angular/material/icon';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import {MatInputModule} from '@angular/material/input';
-import {MatTooltipModule} from '@angular/material/tooltip';
-import {MatCheckboxModule} from '@angular/material/checkbox';
+import { MatInputModule } from '@angular/material/input';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatSnackBarModule } from '@angular/material/snack-bar';
 
 @NgModule({
     imports: [
@@ -31,7 +32,8 @@ import {MatCheckboxModule} from '@angular/material/checkbox';
         ReactiveFormsModule,
         MatInputModule,
         MatTooltipModule,
-        MatCheckboxModule
+        MatCheckboxModule,
+        MatSnackBarModule
     ],
     exports: [GoogleBooksComponent, InfiniteScrollComponent],
     declarations: [GoogleBooksComponent, MaterialElevationDirective, InfiniteScrollComponent],

@@ -1,7 +1,9 @@
 import { Component, OnInit, ChangeDetectorRef, ChangeDetectionStrategy } from '@angular/core';
 import { GoogleBooksService, BookItem } from '../../services/google-books-api';
-import {FormBuilder, FormControl, FormGroup} from '@angular/forms';
-import {forkJoin} from 'rxjs';
+import { FormBuilder, FormControl, FormGroup } from '@angular/forms';
+import { forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
+import { MatSnackBar } from '@angular/material/snack-bar';
 
 const pageSize: number = 36;
 
@@ -25,17 +27,39 @@ export class GoogleBooksComponent implements OnInit {
 
   ngOnInit() {}
 
-  constructor(fb: FormBuilder, private googleBooksService: GoogleBooksService, private changeDetectorRef: ChangeDetectorRef) {
+  constructor(fb: FormBuilder, 
+    private _snackBar: MatSnackBar,
+    private googleBooksService: GoogleBooksService, 
+    private changeDetectorRef: ChangeDetectorRef) {
+
     this.googleBooks = fb.group({
       search: this.search,
       favorite: this.favorite
     });
-    this.googleBooksService.getFavoritesBooks().subscribe((data) => {
+    this.googleBooksService.getFavoritesBooks().pipe(
+      catchError(_ => {
+        this._snackBar.open('Error loading the Favorites', 'End now', {
+          duration: 3000,
+          horizontalPosition: 'end',
+          verticalPosition: 'bottom',
+        });
+        return of(new Map<string, BookItem>());
+      })
+    ).subscribe((data) => {
       this.favoritesBooks = data;
     });
     forkJoin(
       this.googleBooksService.getControlValue('search_control'),
       this.googleBooksService.getControlValue('books_favorites_control')
+    ).pipe(
+      catchError(_ => {
+        this._snackBar.open('Error loading the controls', 'End now', {
+          duration: 3000,
+          horizontalPosition: 'end',
+          verticalPosition: 'bottom',
+        });
+        return of(['', undefined]);
+      })
     ).subscribe((results: any[]) => {
       this.search.setValue(results[0]);
       if(results[1] && results[1].length) {
@@ -43,14 +67,33 @@ export class GoogleBooksComponent implements OnInit {
         this.favorite.setValue(true);
         this.search.disable();
       }
+      
       this.favorite.valueChanges.subscribe((favorite) => {
         if(favorite) {
           this.items = this.items.filter((item: BookItem) => item.favorite);
-          this.googleBooksService.saveControlValue('books_favorites_control', this.items).subscribe();
+          this.googleBooksService.saveControlValue('books_favorites_control', this.items).pipe(
+            catchError(_ => {
+              this._snackBar.open('Error saving the Favorites state', 'End now', {
+                duration: 3000,
+                horizontalPosition: 'end',
+                verticalPosition: 'bottom',
+              });
+              return of(false);
+            })
+          ).subscribe();
           this.search.disable();
           this.changeDetectorRef.markForCheck();
         } else {
-          this.googleBooksService.clearControlValue('books_favorites_control').subscribe();
+          this.googleBooksService.clearControlValue('books_favorites_control').pipe(
+            catchError(_ => {
+              this._snackBar.open('Error removing the Favorites state', 'End now', {
+                duration: 3000,
+                horizontalPosition: 'end',
+                verticalPosition: 'bottom',
+              });
+              return of(false);
+            })
+          ).subscribe();
           this.search.enable();
           this.searchBooks();
         }
@@ -69,7 +112,17 @@ export class GoogleBooksComponent implements OnInit {
     } else {
       this.favoritesBooks.set(book.id, book);
     }
-    this.googleBooksService.saveFavoriteBooks(this.favoritesBooks).subscribe(() => {
+    this.googleBooksService.saveFavoriteBooks(this.favoritesBooks).pipe(
+      catchError(_ => {
+        this._snackBar.open('Error updating the Favorites', 'End now', {
+          duration: 3000,
+          horizontalPosition: 'end',
+          verticalPosition: 'bottom',
+        });
+        return of(false);
+      })
+    )
+    .subscribe(() => {
       book.favorite = !book.favorite;
       this.changeDetectorRef.markForCheck();
     })
@@ -104,8 +157,20 @@ export class GoogleBooksComponent implements OnInit {
   }
 
   private getBooks(offset: number) {
-    this.googleBooksService.SearchBooks(this.search.value, pageSize, offset, this.favoritesBooks).subscribe((data) => {
-      this.items = data.items ? this.items.concat(data.items) : [];
+    this.googleBooksService.SearchBooks(this.search.value, pageSize, offset, this.favoritesBooks).pipe(
+      catchError(_ => {
+        this._snackBar.open('Error loading the books', 'End now', {
+          duration: 3000,
+          horizontalPosition: 'end',
+          verticalPosition: 'bottom',
+        });
+        return of({
+          totalItems: 0,
+          items: []
+        });
+      })
+    ).subscribe((data) => {
+      this.items = this.items.concat(data.items);
       this.totalItems = data.totalItems;
       this.loadingPage = false;
       this.changeDetectorRef.markForCheck();
